@@ -1,0 +1,336 @@
+html(lang='en')
+	head
+	meta(charset='utf-8')
+	meta(http-equiv='X-UA-Compatible', content='IE=edge')
+	meta(name='viewport', content='width=device-width, initial-scale=1.0')
+	meta(name='description', content='')
+	meta(name='author', content='')
+	link(rel='shortcut icon', href='images/ico/logo.png')
+	// Bootstrap core CSS
+	link(href='/stylesheets/bootstrap.min.css', rel='stylesheet')
+	link(href='/stylesheets/ol.css', rel='stylesheet')
+	link(href='/stylesheets/ol3-popup.css', rel='stylesheet')
+	link(href='/stylesheets/popup_form.css', rel='stylesheet')
+	link(href='/stylesheets/search-form.css', rel='stylesheet')
+	link(href='/stylesheets/styles.css', rel='stylesheet')
+	script(src='/javascripts/ol.js')
+	script(src='/javascripts/ol3-popup.js')
+	script(src='/javascripts/jquery-2.2.3.js')
+	script(src='javascripts/bootstrap.min.js')
+	body
+	.navbar-wrapper
+		.container
+		.navbar.navbar-inverse.navbar-static-top(role='navigation')
+			.container
+			.navbar-header
+				a.navbar-brand( href='/bootstrap') Mapping Engineering
+			.navbar-collapse.collapse
+				ul.nav.navbar-nav
+					li.active: a(href='/bootstrap') Home
+					li: a(href='contact.html') Contact
+					li.dropdown
+						a.dropdown-toggle(href='#', data-toggle='dropdown') Draw 
+							span.caret
+						ul.dropdown-menu
+							li#Start_Drawing: a(href='#') start drawing
+							li#Stop_Drawing: a(href='#') stop drawing
+					li.dropdown
+						a.dropdown-toggle(href='#', data-toggle='dropdown') Modify 
+							span.caret
+						ul.dropdown-menu
+							li#Start_Modifying: a(href='#') Modify Geometry
+					li.dropdown
+						a.dropdown-toggle(href='#', data-toggle='dropdown') Delete 
+							span.caret
+						ul.dropdown-menu
+							li#Delete: a(href='#') Delete selected zone
+					li.dropdown
+						a.dropdown-toggle(href='#', data-toggle='dropdown') Layers 
+							span.caret
+						ul.dropdown-menu
+							li#toggleMicrozones: a(href='#') Microzones
+							li#togglePrefectures: a(href='#') Prefectures
+							li#toggleArrondissements: a(href='#') Arrondissements
+					li#open-search: a(href='#') Search
+					input#ID-search.search-form-field(type='text', name='firstname')
+	#map.map
+	footer
+		.container(style='bottom:0px;')
+		p
+			| © 2016 Mapping Engineering SARL. · 
+			a(href='#') Privacy
+			|	· 
+			a(href='#') Terms
+	
+	script(type='text/javascript').
+		var GeoJSONFeatures=!{JSON.stringify(features)};
+		//alert(GeoJSONFeatures);
+		var osm = new ol.layer.Tile({source: new ol.source.OSM()})
+		
+		var microzonesLayer = new ol.layer.Vector({
+			title: 'microzones',
+			source: new ol.source.Vector({
+				format: new ol.format.GeoJSON(),
+				projection :'EPSG:4326',
+				features: (new ol.format.GeoJSON()).readFeatures(GeoJSONFeatures)
+			}),
+			style: new ol.style.Style({
+				stroke: new ol.style.Stroke({
+					color: '#737373',
+					width: 2
+				}),
+				fill: new ol.style.Fill({
+					color: 'rgba(255,255,255,0.2)'
+				})
+			})
+		});
+
+		var prefecturesSource=new ol.source.Vector({
+			projection : 'EPSG:4326',
+			url: 'Maps/Prefectures.geojson',
+			format: new ol.format.GeoJSON()
+		});
+		var prefecturesLayer=new ol.layer.Vector({
+			title: 'Prefectures',
+			source: prefecturesSource,
+			style: new ol.style.Style({
+				fill: new ol.style.Fill({
+					color: 'rgba(255, 255, 255, 0.2)'
+				}),
+				stroke: new ol.style.Stroke({
+					color: '#737373',
+					width: 2
+				}),
+				image: new ol.style.Circle({
+					radius: 7,
+					fill: new ol.style.Fill({
+						color: '#ffcc33'
+					})
+				})
+			})
+		});
+
+		var arrondissementsSource=new ol.source.Vector({
+			projection : 'EPSG:4326',
+			url: 'Maps/Arrondissements.geojson',
+			format: new ol.format.GeoJSON()
+		});
+		var arrondissementsLayer=new ol.layer.Vector({
+			title: 'Arrondissements',
+			source: arrondissementsSource,
+			style: new ol.style.Style({
+				fill: new ol.style.Fill({
+					color: 'rgba(255, 255, 255, 0.2)'
+				}),
+				stroke: new ol.style.Stroke({
+					color: '#737373',
+					width: 2
+				}),
+				image: new ol.style.Circle({
+					radius: 7,
+					fill: new ol.style.Fill({
+						color: '#ffcc33'
+					})
+				})
+			})
+		});
+
+		var map = new ol.Map({
+			layers: [osm, microzonesLayer, arrondissementsLayer, prefecturesLayer],
+			target: 'map',
+			controls: ol.control.defaults().extend([
+				new ol.control.ScaleLine({className: 'ol-scale-line', target: document.getElementById('scale-line')})
+			]),
+			view: new ol.View({
+				projection: 'EPSG:4326',
+				center: [#{lng}, #{lat}],
+				zoom: 11
+			})
+		});
+
+		prefecturesLayer.setVisible(false);
+		arrondissementsLayer.setVisible(false);
+
+		hoverInteraction = new ol.interaction.Select({
+			condition: ol.events.condition.pointerMove,
+			layers:[microzonesLayer, arrondissementsLayer, prefecturesLayer]	//Setting layers to be hovered
+		});
+		map.addInteraction(hoverInteraction);
+
+		var select = new ol.interaction.Select({layers : [microzonesLayer]});
+		map.addInteraction(select);
+
+		var popup = new ol.Overlay.Popup();
+		map.addOverlay(popup);
+		var singleClickListener=function(evt) {
+			popup.hide();
+			var layerType;
+			popup.setOffset([0, 0]);
+			var feature = map.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
+				if(layer==microzonesLayer){
+					layerType="microzones";
+					return feature;
+				}
+				if(layer==prefecturesLayer){
+					layerType="prefectures";
+					return feature;
+				}
+				if(layer==arrondissementsLayer){
+					layerType="arrondissements";
+					return feature;
+				}
+			});
+			if(layerType=="microzones"){
+				if (feature) {
+					selectedFeature=feature;
+					//getting the center of the polygons to display the popup on its coordinates
+					var ext=feature.getGeometry().getExtent();
+					var center=ol.extent.getCenter(ext);
+					var props = feature.getProperties();
+					//console.log(props.microzone);
+					var info =  "<form class='form-container'>"
+						+"<table>"
+							+"<tr>"
+								+"<td><div class='form-title'>ID</div></td>"
+								+"<td><input id='ID' class='form-field' type='text' value="+props.id+" /></td>"
+							+"</tr>"
+							+"<tr>"
+								+"<td><div class='form-title'>Zone</div></td>"
+								+"<td><input id='Microzone' class='form-field' type='text' value='"+props.microzone+"' /></td>"
+							+"</tr>"
+							+"<tr>"
+								+"<td><div class='form-title'>Arrondissement</div></td>"
+								+"<td><input id='Arrondissement' class='form-field' type='text' value='"+props.arrondissement+"' /></td>"
+							+"</tr>"
+							+"<tr>"
+								+"<td><div class='form-title'>Prefecture</div></td>"
+								+"<td><input id='Prefecture' class='form-field' type='text' value='"+props.prefecture+"' /></td>"
+							+"</tr>"
+							+"<tr>"
+								+"<td><div class='form-title'>Population</div></td>"
+								+"<td><input id='Population' class='form-field' type='text' value="+props.population+" /></td>"
+							+"</tr>"
+							+"<tr>"
+								+"<td><div class='form-title'>Superficie</div></td>"
+								+"<td><input id='Superficie' class='form-field' type='text' value="+props.superficie+" /></td>"
+							+"</tr>"
+						+"</table>"
+						+"<div class='submit-container'>"
+							+"<input id='Save' class='submit-button' type='button' value='Save' />"
+						+"</div>"
+					+"</form>";
+					// Offset the popup so it points at the middle of the marker not the tip
+					popup.setOffset([0, -22]);
+					popup.show(center,info);
+					map.setView( new ol.View({
+						projection: "http://www.opengis.net/gml/srs/epsg.xml#4326",
+						center: [center[0] , center[1]+0.056571],
+						zoom: 12
+					}));
+				}
+				$('#Save').click(function(evt){
+					evt.preventDefault();
+					selectedFeature.set('microzone',$('#Microzone').val());
+					selectedFeature.set('arrondissement',$('#Arrondissement').val());
+					selectedFeature.set('prefecture',$('#Prefecture').val());
+					selectedFeature.set('population',$('#Population').val());
+					//alert(data);
+					//an AJAX call to store the data
+					$.ajax({
+						type: "POST",
+						url: "http://localhost:8080/geoserver/wfs",
+						data: data,
+						contentType: 'text/xml',
+						success: function(data) {
+							console.log("Attributes successfully modified");
+						},
+						error: function(e) {
+							var errorMsg = e? (e.status + ' ' + e.statusText) : "";
+							console.log('Error saving this feature to GeoServer.<br><br>'+ errorMsg);
+						},
+						context: this
+					});
+					location.reload();
+				});
+			}
+			if(layerType=="arrondissements"){
+				if (feature) {
+					//selectedFeature=feature;
+					//getting the center of the polygons to display the popup on its coordinates
+					var ext=feature.getGeometry().getExtent();
+					var center=ol.extent.getCenter(ext);
+					var props = feature.getProperties();
+					//console.log(props.microzone);
+					var info =  "<form class='form-container'>"
+						+"</br>Arrondissement : "+props.Arrondissement
+						+"</br>Prefecture : "+props.Prefecture
+						+"</br>Population : "+props.Population
+						+"</br>Superficie : "+props.Superficie+"m²"
+					+"</br></form>";
+					// Offset the popup so it points at the middle of the marker not the tip
+					popup.setOffset([0, -22]);
+					popup.show(center,info);
+				}
+			}
+			if(layerType=="prefectures"){
+				if (feature) {
+					//selectedFeature=feature;
+					//getting the center of the polygons to display the popup on its coordinates
+					var ext=feature.getGeometry().getExtent();
+					var center=ol.extent.getCenter(ext);
+					var props = feature.getProperties();
+					//console.log(props.microzone);
+					var info =  "<form class='form-container'>"
+						+"</br>Prefecture : "+props.Prefecture
+						+"</br>Population : "+props.Population
+						+"</br>Superficie : "+props.Superficie+"m²"
+					+"</br></form>";
+					// Offset the popup so it points at the middle of the marker not the tip
+					popup.setOffset([0, -22]);
+					popup.show(center,info);
+				}
+			}
+		}
+		var key=map.on('singleclick', singleClickListener);
+
+		//layer toggling (prefectures and arrondissements) code starts here
+		$('#togglePrefectures').click(function() {
+			if(prefecturesLayer.getVisible()){
+				prefecturesLayer.setVisible(false);
+				console.log("layer prefectures is not visible");
+			}
+			else{
+				prefecturesLayer.setVisible(true);
+				microzonesLayer.setVisible(false);
+				arrondissementsLayer.setVisible(false);
+				console.log("layer prefectures is visible");
+			}
+		});
+
+		$('#toggleArrondissements').click(function() {
+			if(arrondissementsLayer.getVisible()){
+				arrondissementsLayer.setVisible(false);
+				console.log("layer arrondissements is not visible");
+			}
+			else{
+				arrondissementsLayer.setVisible(true);
+				microzonesLayer.setVisible(false);
+				prefecturesLayer.setVisible(false);
+				console.log("layer arrondissements is visible");
+			}
+		});
+
+		$('#toggleMicrozones').click(function() {
+			if(microzonesLayer.getVisible()){
+				microzonesLayer.setVisible(false);
+				console.log("layer microzones is not visible");
+			}
+			else{
+				microzonesLayer.setVisible(true);
+				prefecturesLayer.setVisible(false);
+				arrondissementsLayer.setVisible(false);
+				console.log("layer microzones is visible");
+			}
+		});
+
+		//layer toggling code ends here
