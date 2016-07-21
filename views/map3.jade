@@ -11,7 +11,6 @@ html(lang='en')
 	link(href='/stylesheets/ol.css', rel='stylesheet')
 	link(href='/stylesheets/ol3-popup.css', rel='stylesheet')
 	link(href='/stylesheets/popup_form.css', rel='stylesheet')
-	link(href='/stylesheets/search-form.css', rel='stylesheet')
 	link(href='/stylesheets/styles.css', rel='stylesheet')
 	script(src='/javascripts/ol.js')
 	script(src='/javascripts/ol3-popup.js')
@@ -211,7 +210,7 @@ html(lang='en')
 								+"<td><input id='Population' class='form-field' type='text' value="+props.population+" /></td>"
 							+"</tr>"
 							+"<tr>"
-								+"<td><div class='form-title'>Superficie</div></td>"
+								+"<td><div class='form-title'>Superficie m²</div></td>"
 								+"<td><input id='Superficie' class='form-field' type='text' value="+props.superficie+" /></td>"
 							+"</tr>"
 						+"</table>"
@@ -230,27 +229,29 @@ html(lang='en')
 				}
 				$('#Save').click(function(evt){
 					evt.preventDefault();
-					selectedFeature.set('microzone',$('#Microzone').val());
-					selectedFeature.set('arrondissement',$('#Arrondissement').val());
-					selectedFeature.set('prefecture',$('#Prefecture').val());
-					selectedFeature.set('population',$('#Population').val());
+					//alert($('#ID').val()+" "+$('#Microzone').val()+" "+$('#Arrondissement').val()+" "+$('#Prefecture').val()+" "+$('#Population').val());
 					//alert(data);
 					//an AJAX call to store the data
 					$.ajax({
 						type: "POST",
-						url: "http://localhost:8080/geoserver/wfs",
-						data: data,
-						contentType: 'text/xml',
+						url: "/save",
+						data: {
+							id: $('#ID').val(),
+							microzone: $('#Microzone').val(),
+							arrondissement: $('#Arrondissement').val(),
+							prefecture: $('#Prefecture').val(),
+							population: $('#Population').val()
+						},
 						success: function(data) {
-							console.log("Attributes successfully modified");
+							alert("Attributes successfully modified");
 						},
 						error: function(e) {
 							var errorMsg = e? (e.status + ' ' + e.statusText) : "";
-							console.log('Error saving this feature to GeoServer.<br><br>'+ errorMsg);
+							alert('Error saving this feature in DB.<br><br>'+ errorMsg);
 						},
 						context: this
 					});
-					location.reload();
+					//location.reload();
 				});
 			}
 			if(layerType=="arrondissements"){
@@ -265,7 +266,7 @@ html(lang='en')
 						+"</br>Arrondissement : "+props.Arrondissement
 						+"</br>Prefecture : "+props.Prefecture
 						+"</br>Population : "+props.Population
-						+"</br>Superficie : "+props.Superficie+"m²"
+						+"</br>Superficie : "+props.Superficie+" m²"
 					+"</br></form>";
 					// Offset the popup so it points at the middle of the marker not the tip
 					popup.setOffset([0, -22]);
@@ -283,7 +284,7 @@ html(lang='en')
 					var info =  "<form class='form-container'>"
 						+"</br>Prefecture : "+props.Prefecture
 						+"</br>Population : "+props.Population
-						+"</br>Superficie : "+props.Superficie+"m²"
+						+"</br>Superficie : "+props.Superficie+" m²"
 					+"</br></form>";
 					// Offset the popup so it points at the middle of the marker not the tip
 					popup.setOffset([0, -22]);
