@@ -453,7 +453,7 @@ html(lang='en')
 							geometry: wkt 
 						},
 						success:function(response){
-							alert("Terrain modifié dans la base de données");
+							alert("microzone modifiée dans la base de données");
 							window.location.reload();
 						}
 					});	
@@ -461,3 +461,141 @@ html(lang='en')
 			});
 		});
 		//Modification code ends here
+
+		//Delete Feature code starts here
+		$('#Delete').click( function(){
+			if(!select.getFeatures()){
+				alert("Veuillez séléctionner le terrain à supprimer");
+			}
+			else{
+				var OK=confirm("êtes vous sûr de vouloir supprimer cette microzone ?");
+				if(OK){
+					var feature = select.getFeatures().item(0);
+					$.ajax({
+						url: '/delete',
+						type: 'POST',
+						data: {
+							id: feature.get('id')
+						},
+						success:function(response){
+							alert("microzone supprimée de la base de données");
+							window.location.reload();
+						}
+					});
+				}
+			}
+		});
+		// Delete code ends here
+
+		//Search features by id or microzone's name starts here
+		$('#open-search').click( function(evt){
+			if(microzonesLayer.getVisible()==true){
+				if(isFinite($('#ID-search').val().trim())){
+					//console.log("a number");
+					microzonesLayer.getSource().forEachFeature(function(feature) {
+						if(feature.get('id')==$('#ID-search').val()){
+							select.getFeatures().clear();
+							select.getFeatures().push(feature);
+							//getting the center of the polygons to display the popup on its coordinates
+							var ext=feature.getGeometry().getExtent();
+							var center=ol.extent.getCenter(ext);
+							var props = feature.getProperties();
+							var info =  "<form class='form-container'>"
+								+"<table>"
+									+"<tr>"
+										+"<td><div class='form-title'>ID</div></td>"
+										+"<td><input id='ID' class='form-field' type='text' value="+props.id+" /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Zone</div></td>"
+										+"<td><input id='Microzone' class='form-field' type='text' value='"+props.microzone+"' /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Arrondissement</div></td>"
+										+"<td><input id='Arrondissement' class='form-field' type='text' value='"+props.arrondissement+"' /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Prefecture</div></td>"
+										+"<td><input id='Prefecture' class='form-field' type='text' value='"+props.prefecture+"' /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Population</div></td>"
+										+"<td><input id='Population' class='form-field' type='text' value="+props.population+" /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Superficie</div></td>"
+										+"<td><input id='Superficie' class='form-field' type='text' value="+props.superficie+" /></td>"
+									+"</tr>"
+								+"</table>"
+								+"<div class='submit-container'>"
+									+"<input id='Save' class='submit-button' type='button' value='Save' />"
+								+"</div>"
+							+"</form>";
+							// Offset the popup so it points at the middle of the marker not the tip
+							popup.setOffset([0, -22]);
+							popup.show(center,info);
+							map.setView( new ol.View({
+								projection: "http://www.opengis.net/gml/srs/epsg.xml#4326",
+								center: [center[0] , center[1]+0.056571],
+								zoom: 12
+							}));
+						}
+					});
+				}
+				else{
+					microzonesLayer.getSource().forEachFeature(function(feature) {
+						if(feature.get('microzone')==$('#ID-search').val()){
+							select.getFeatures().clear();
+							select.getFeatures().push(feature);
+							//getting the center of the polygons to display the popup on its coordinates
+							var ext=feature.getGeometry().getExtent();
+							var center=ol.extent.getCenter(ext);
+							var props = feature.getProperties();
+							var info =  "<form class='form-container'>"
+								+"<table>"
+									+"<tr>"
+										+"<td><div class='form-title'>ID</div></td>"
+										+"<td><input id='ID' class='form-field' type='text' value="+props.id+" /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Zone</div></td>"
+										+"<td><input id='Microzone' class='form-field' type='text' value='"+props.microzone+"' /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Arrondissement</div></td>"
+										+"<td><input id='Arrondissement' class='form-field' type='text' value='"+props.arrondissement+"' /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Prefecture</div></td>"
+										+"<td><input id='Prefecture' class='form-field' type='text' value='"+props.prefecture+"' /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Population</div></td>"
+										+"<td><input id='Population' class='form-field' type='text' value="+props.population+" /></td>"
+									+"</tr>"
+									+"<tr>"
+										+"<td><div class='form-title'>Superficie</div></td>"
+										+"<td><input id='Superficie' class='form-field' type='text' value="+props.superficie+" /></td>"
+									+"</tr>"
+								+"</table>"
+								+"<div class='submit-container'>"
+									+"<input id='Save' class='submit-button' type='button' value='Save' />"
+								+"</div>"
+							+"</form>";
+							// Offset the popup so it points at the middle of the marker not the tip
+							popup.setOffset([0, -22]);
+							popup.show(center,info);
+							map.setView( new ol.View({
+								projection: "http://www.opengis.net/gml/srs/epsg.xml#4326",
+								center: [center[0] , center[1]+0.056571],
+								zoom: 12
+							}));
+						}
+					});
+				}
+			}
+			else{
+				alert("Veuillez activer la couche microzones pour pouvoir chercher un élément");
+			}
+		});
+		//Search code ends here

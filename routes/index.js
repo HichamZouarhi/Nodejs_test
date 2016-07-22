@@ -150,6 +150,21 @@ app.post('/modify', function(req, res) {
 	
 });
 
+app.post('/delete', function(req, res) {
+	var client = new pg.Client("postgres://postgres:P0stgres@127.0.0.1/Afriquia_Gaz");
+	client.connect();
+	//console.log(req.body.microzone);
+	client.query("DELETE FROM microzones"
+		+" WHERE id='"+req.body.id+"'");
+ 	
+	//client.end();
+	res.send("row updated in DB");
+	res.end();
+		/*res.send(result.rows[0].row_to_json);
+		res.end();*/
+	
+});
+
 app.get('/layers', function (req, res) {
 	var client = new pg.Client(conString);
 	client.connect();
