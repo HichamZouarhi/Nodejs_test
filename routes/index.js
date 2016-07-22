@@ -116,6 +116,23 @@ app.post('/save', function(req, res) {
 	
 });
 
+app.post('/add', function(req, res) {
+	var client = new pg.Client("postgres://postgres:P0stgres@127.0.0.1/Afriquia_Gaz");
+	client.connect();
+	//console.log(req.body.microzone);
+	client.query("INSERT into microzones (superficie, geometry) "
+		+"VALUES ('"+req.body.superficie+"'"
+		+", ST_SetSRID(ST_GeomFromText('"+req.body.geometry+"'), 4326)"
+		+")");
+ 	
+	//client.end();
+	res.send("row inserted in DB");
+	res.end();
+		/*res.send(result.rows[0].row_to_json);
+		res.end();*/
+	
+});
+
 app.get('/layers', function (req, res) {
 	var client = new pg.Client(conString);
 	client.connect();

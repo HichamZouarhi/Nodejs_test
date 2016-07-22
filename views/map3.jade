@@ -65,7 +65,8 @@ html(lang='en')
 		var GeoJSONFeatures=!{JSON.stringify(features)};
 		//alert(GeoJSONFeatures);
 		var osm = new ol.layer.Tile({source: new ol.source.OSM()})
-		
+		var sphere = new ol.Sphere(6378137);//the geodesic sphere to compute area of polygons
+
 		var microzonesLayer = new ol.layer.Vector({
 			title: 'microzones',
 			source: new ol.source.Vector({
@@ -187,7 +188,7 @@ html(lang='en')
 					var center=ol.extent.getCenter(ext);
 					var props = feature.getProperties();
 					//console.log(props.microzone);
-					var info =  "<form class='form-container'>"
+					var info =	"<form class='form-container'>"
 						+"<table>"
 							+"<tr>"
 								+"<td><div class='form-title'>ID</div></td>"
@@ -244,6 +245,7 @@ html(lang='en')
 						},
 						success: function(data) {
 							alert("Attributes successfully modified");
+							window.location.reload();
 						},
 						error: function(e) {
 							var errorMsg = e? (e.status + ' ' + e.statusText) : "";
@@ -251,7 +253,6 @@ html(lang='en')
 						},
 						context: this
 					});
-					//location.reload();
 				});
 			}
 			if(layerType=="arrondissements"){
@@ -262,7 +263,7 @@ html(lang='en')
 					var center=ol.extent.getCenter(ext);
 					var props = feature.getProperties();
 					//console.log(props.microzone);
-					var info =  "<form class='form-container'>"
+					var info =	"<form class='form-container'>"
 						+"</br>Arrondissement : "+props.Arrondissement
 						+"</br>Prefecture : "+props.Prefecture
 						+"</br>Population : "+props.Population
@@ -281,7 +282,7 @@ html(lang='en')
 					var center=ol.extent.getCenter(ext);
 					var props = feature.getProperties();
 					//console.log(props.microzone);
-					var info =  "<form class='form-container'>"
+					var info =	"<form class='form-container'>"
 						+"</br>Prefecture : "+props.Prefecture
 						+"</br>Population : "+props.Population
 						+"</br>Superficie : "+props.Superficie+" m²"
@@ -335,3 +336,74 @@ html(lang='en')
 		});
 
 		//layer toggling code ends here
+
+		//Drawing code starts here
+		// Edits will be done on an Overlay and then will be saved
+		var features = new ol.Collection();
+		var featureOverlay = new ol.layer.Vector({
+			source: new ol.source.Vector({features: features}),
+			style: new ol.style.Style({
+				fill: new ol.style.Fill({
+					color: 'rgba(255, 255, 255, 0.2)'
+				}),
+				stroke: new ol.style.Stroke({
+					color: '#ffcc33',
+					width: 2
+				}),
+				image: new ol.style.Circle({
+					radius: 7,
+					fill: new ol.style.Fill({
+						color: '#ffcc33'
+					})
+				})
+			})
+		});
+		featureOverlay.setMap(map);
+		var draw=new ol.interaction.Draw({
+			features: features,
+			type: ('Polygon')
+		});
+		// when a new feature has been drawn...
+		draw.on('drawend', function(event) {
+			var formatwkt = new ol.format.WKT();
+			var wkt = formatwkt.writeGeometry(event.feature.getGeometry());
+			//alert(wkt);
+			//var feature = event.feature;// this variable feature will serve to store the attributes of the new zone
+			var area=Math.abs(sphere.geodesicArea(event.feature.getGeometry().getLinearRing(0).getCoordinates()));
+			//alert(area);
+			//an AJAX call to the Add route to store the data
+			$.ajax({
+				type: "POST",
+				url: "/add",
+				data: {
+					superficie: area,
+					geometry: wkt
+				},
+				success: function(data) {
+					alert("feature successfully added");
+					window.location.reload();
+				},
+				error: function(e) {
+					var errorMsg = e? (e.status + ' ' + e.statusText) : "";
+					alert('Error saving this feature to DB.<br><br>'
+					+ errorMsg);
+				},
+				context: this
+			});
+			//and voila the page will reload after successfully adding the newly drawn feature
+		});
+		$('#Start_Drawing').click( function(){
+			if(microzonesLayer.getVisible()==true){
+				map.unByKey(key);	
+				//map.removeInteraction(modify);// we disable the modify interaction so there can be no conflicts between events
+				map.addInteraction(draw);//not to forget to add the interaction to the map
+			}
+			else{
+				alert("Veuillez activer la couche microzones pour pouvoir ajouter un élément");
+			}
+		});
+
+		$('#Stop_Drawing').click( function(){
+			map.removeInteraction(draw);//Here we disable drawing
+			key=map.on('singleclick',singleClickListener);//and re-enable the singleClickListener to display the popup form
+		});
